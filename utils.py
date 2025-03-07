@@ -14,8 +14,10 @@ def extract_relevant_info(search_results: Dict) -> List[Dict]:
         list: A list of dictionaries containing the extracted information.
     """
     useful_info = []
+
+    icon_base_url = 'https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url={url}&size=64'
     
-    if 'webPages' in search_results and 'value' in search_results['webPages']:
+    if 'webPages' in search_results and 'value' in search_results['webPages']:  # bocha
         for id, result in enumerate(search_results['webPages']['value']):
             info = {
                 'id': id + 1,  # Increment id for easier subsequent operations
@@ -30,6 +32,25 @@ def extract_relevant_info(search_results: Dict) -> List[Dict]:
                 'context': ''  # Reserved field to be filled later
             }
             useful_info.append(info)
+    elif 'results' in search_results:  # tavily
+        for id, result in enumerate(search_results['results']):
+            url = result.get('url', '')
+            site_icon = icon_base_url.format(url=url) if url else ''
+            info = {
+                'id': id + 1,  # Increment id for easier subsequent operations
+                'keywords': [search_results['query']], # TODO 兼容bing等API嘛？
+                'title': result.get('title', ''),
+                'url': url,
+                'site_name': result.get('siteName', ''),
+                'site_icon': site_icon,
+                'date': result.get('date', ''),
+                'snippet': result.get('content', ''),  # Remove HTML tags
+                # Add context content to the information
+                'context': result.get('raw_content', '')
+            }
+            useful_info.append(info)
+
+        print('useful_info:', useful_info)
     
     return useful_info
 

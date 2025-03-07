@@ -11,6 +11,7 @@ MODEL_INFOS = [
     { "model_name": "llama-3.3-70b-instruct", "label": "海外开源", "order": 9 },
 ]
 FEACH_HTTP_TIMEOUT = 4
+# SEARCH_API_URL = "https://api.tavily.com/search"
 SEARCH_API_URL = "https://api.bochaai.com/v1/web-search"
 GPT_MODEL_API = 'https://cloud.infini-ai.com/maas/v1'
 GPT_MODEL_NAME = 'qwen2.5-72b-instruct'

@@ -31,6 +31,37 @@ def bocha_web_search(search_query: str, api_key: str, endpoint: str, num_results
     search_results = response.json()
     return search_results.get('data', {})
 
+def tavily_web_search(search_query: str, api_key: str, endpoint: str, num_results: int=10):
+    """
+    Perform a web search using the Tavily API.
+
+    Args:
+        search_query (str): The search query.
+        api_key (str): The Tavily API key.
+        num_results (int): The number of search results to retrieve.
+
+    Returns:
+        list: A list of dictionaries containing the extracted information.
+    """
+    payload = {
+        "query": search_query,
+        "search_depth": 'basic',
+        "topic": 'general',
+        "days": 3,
+        "include_answer": False,
+        "include_raw_content": True,
+        "max_results": num_results,
+        "include_domains": [],
+        "exclude_domains": [],
+        "include_images": False,
+    }
+    headers = {
+        "Content-Type": "application/json",
+        'Authorization': f'Bearer {api_key}'
+    }
+    response = requests.post(endpoint, headers=headers, data=json.dumps(payload))
+    return response.json()
+
 def process_search_queries(
         search_queries: List[str], 
         api_key: str, 
@@ -61,6 +92,8 @@ def process_search_queries(
                 results[query] = cached_results
                 query_cached.append(query)
     query_filtered = [q for q in search_queries if q not in query_cached]
+    print(f"Query cached: {query_cached}")
+    print(f"Query filtered: {query_filtered}")
 
     if len(query_filtered) == 0:
         return results
@@ -72,7 +105,8 @@ def process_search_queries(
         # 提交任务到线程池
         future_to_query = {
             executor.submit(
-                bocha_web_search, query, api_key, endpoint, num_results_per_query
+                tavily_web_search, query, api_key, endpoint, num_results_per_query
+                # bocha_web_search, query, api_key, endpoint, num_results_per_query
             ): query 
             for query in query_filtered
         }

@@ -29,7 +29,7 @@ search_num = 10
 top_k = 2
 max_doc_len = 3000
 cache_db_manager = CrawlerDatabaseManager('crawler_data.db')
-search_cache_db_manager = SearchDatabaseManager('search_data.db')
+search_cache_db_manager = SearchDatabaseManager('search_data.db', outdated_days=0)
 
 class QuestionRequest(BaseModel):
     question: str
@@ -95,8 +95,8 @@ async def search(request: SearchRequest):
             for results in query_to_search_results.values()
         ]
     )
-    urls_to_fetch = [it['url'] for it in relevant_info]
-    urls_to_fetch_filtered = [u for u in urls_to_fetch if cache_db_manager.get(u) is None]
+    urls_to_fetch = [it['url'] for it in relevant_info if not it['context']]  # not include the context
+    urls_to_fetch_filtered = [u for u in urls_to_fetch if cache_db_manager.get(u) is None]  # not include the cache
     cached_urls = [u for u in urls_to_fetch if u not in urls_to_fetch_filtered]
 
     if urls_to_fetch_filtered:
@@ -115,8 +115,10 @@ async def search(request: SearchRequest):
         url = doc_info['url']
         if url in cached_urls:
             raw_context = cache_db_manager.get(url)['context']
-        else:
+        elif url in urls_to_fetch_filtered:
             raw_context = fetched_contents.get(url, "")
+        else:
+            raw_context = doc_info['context']
         doc_info['snippet'] = doc_info['snippet'].replace('<b>','').replace('</b>','')
         success, filtered_context = extract_snippet_with_context(raw_context, doc_info['snippet'], context_chars=max_doc_len)
         if success:
