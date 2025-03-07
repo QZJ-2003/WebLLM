@@ -92,8 +92,8 @@ def process_search_queries(
                 results[query] = cached_results
                 query_cached.append(query)
     query_filtered = [q for q in search_queries if q not in query_cached]
-    print(f"Query cached: {query_cached}")
-    print(f"Query filtered: {query_filtered}")
+    # print(f"Query cached: {query_cached}")
+    # print(f"Query filtered: {query_filtered}")
 
     if len(query_filtered) == 0:
         return results
@@ -105,8 +105,8 @@ def process_search_queries(
         # 提交任务到线程池
         future_to_query = {
             executor.submit(
-                tavily_web_search, query, api_key, endpoint, num_results_per_query
-                # bocha_web_search, query, api_key, endpoint, num_results_per_query
+                # tavily_web_search, query, api_key, endpoint, num_results_per_query
+                bocha_web_search, query, api_key, endpoint, num_results_per_query
             ): query 
             for query in query_filtered
         }
