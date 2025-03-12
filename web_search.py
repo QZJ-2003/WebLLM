@@ -29,7 +29,7 @@ search_num = 10
 top_k = 2
 max_doc_len = 3000
 cache_db_manager = CrawlerDatabaseManager('crawler_data.db')
-search_cache_db_manager = SearchDatabaseManager('search_data.db', outdated_days=0)
+search_cache_db_manager = SearchDatabaseManager('search_data.db', outdated_days=10)
 
 class QuestionRequest(BaseModel):
     question: str
