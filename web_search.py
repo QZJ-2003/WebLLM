@@ -54,7 +54,7 @@ class OpenaiRequest(BaseModel):
 @app.post("/gen_keywords")
 async def get_keywords(request: QuestionRequest):
     query = request.question.strip()
-    history = request.history
+    history = history_to_str(request.history)
 
     if not query:
         return {"keywords": []}
