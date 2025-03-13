@@ -134,3 +134,9 @@ def extract_keywords(model_output):
     
     keywords = [keyword for keyword in keywords if keyword]
     return keywords
+
+def detect_language_ratio(text: str) -> float:
+    """Detect Chinese character ratio in text"""
+    chinese_chars = len(re.findall(r'[\u4e00-\u9fff]', text))
+    total_chars = max(1, len(text))  # 防止除零错误
+    return chinese_chars / total_chars

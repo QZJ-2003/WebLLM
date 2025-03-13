@@ -61,8 +61,11 @@ async def get_keywords(request: QuestionRequest):
 
     search_queries = llm_response(
         KEYWORD_EXTRACT_HH_MK_TEMPLATE_ZH.format(
-            chat_history=history_to_str(history), question=query
-        ) if history else KEYWORD_EXTRACT_NH_MK_TEMPLATE_ZH.format(question=query), 
+            chat_history=history, question=query
+        ) if detect_language_ratio(history) > 0.5 else 
+        KEYWORD_EXTRACT_NH_MK_TEMPLATE_ZH.format(
+            question=query
+        ), 
         model=GPT_MODEL_NAME,
         key=GPT_MODEL_KEY,
         api_url=GPT_MODEL_API,

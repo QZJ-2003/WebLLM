@@ -16,6 +16,7 @@ nltk.data.path.append(nltk_path)
 from nltk.tokenize import sent_tokenize
 
 from const import EXTRACT_ERROR_MAKER, FEACH_HTTP_TIMEOUT
+from utils import detect_language_ratio
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
@@ -30,12 +31,6 @@ headers = {
 session = requests.Session()
 session.headers.update(headers)
 
-
-def detect_language_ratio(text: str) -> float:
-    """Detect Chinese character ratio in text"""
-    chinese_chars = len(re.findall(r'[\u4e00-\u9fff]', text))
-    total_chars = max(1, len(text))  # 防止除零错误
-    return chinese_chars / total_chars
 
 def remove_punctuation(text: str) -> str:
     """Remove punctuation from the text."""
