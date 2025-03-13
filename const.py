@@ -1,6 +1,6 @@
 EXTRACT_ERROR_MAKER = '<|ExtractError|>'
 MODEL_INFOS = [
-    { "model_name": "qwq-32b-preview", "label": "数学推理", "order": 1 },
+    { "model_name": "qwq-32b", "label": "数学推理", "order": 1 },
     { "model_name": "qwen2.5-72b-instruct", "label": "中文顶尖", "order": 2 },
     { "model_name": "deepseek-v3", "label": "满血版v3，深度推理", "order": 3 },
     { "model_name": "qwen2.5-7b-instruct", "label": "快速响应", "order": 4 },
