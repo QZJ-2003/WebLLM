@@ -70,6 +70,9 @@ def llm_response_stream(
                 "index": choice.index,
                 "delta": {
                     "content": choice.delta.content,
+                    "reasoning_content": choice.delta.reasoning_content 
+                                         if hasattr(choice.delta, 'reasoning_content') else 
+                                         '',
                     "role": choice.delta.role  # 保留其他delta字段
                 },
                 "finish_reason": choice.finish_reason
