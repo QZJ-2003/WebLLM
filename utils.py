@@ -140,3 +140,9 @@ def detect_language_ratio(text: str) -> float:
     chinese_chars = len(re.findall(r'[\u4e00-\u9fff]', text))
     total_chars = max(1, len(text))  # 防止除零错误
     return chinese_chars / total_chars
+
+def extract_analysis_step(analysis: str) -> List[str]:
+    # 使用正则表达式匹配 [s S]tep \d+: 后面的字符串
+    pattern = r'[sS]tep\s*\d+:\s*(.*)'
+    matches = re.findall(pattern, analysis)
+    return matches

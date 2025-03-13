@@ -4,7 +4,8 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Dict
 
-from template import KEYWORD_EXTRACT_HH_MK_TEMPLATE_ZH, KEYWORD_EXTRACT_NH_MK_TEMPLATE_ZH, SKIP_SEARCH_MAKER
+from templates.search import KEYWORD_EXTRACT_HH_MK_TEMPLATE_ZH, KEYWORD_EXTRACT_NH_MK_TEMPLATE_ZH, SKIP_SEARCH_MAKER
+from templates.analysis import ANALYSIS_NH_TEMPLATE_EN
 from const import EXTRACT_ERROR_MAKER, MODEL_INFOS, GPT_MODEL_NAME, SEARCH_API_URL, GPT_MODEL_API
 from private_key import GPT_MODEL_KEY, SEARCH_API_KEY, JINA_API_KEY
 from crawler_database_manager import CrawlerDatabaseManager
@@ -17,8 +18,10 @@ from utils import extract_relevant_info, \
                   rerank_info_id, \
                   history_to_str, \
                   remove_id, \
-                  extract_keywords
-
+                  extract_keywords, \
+                  detect_language_ratio, \
+                  extract_analysis_step
+from diagram import gen_linear_diagram
 
 app = FastAPI()
 
@@ -38,18 +41,29 @@ class QuestionRequest(BaseModel):
 class SearchRequest(BaseModel):
     keywords: List[str]
 
-class AnswerRequest(BaseModel):
-    question: str
-    history: List[Dict]
-    search_context: List[Dict]
-    model_name: str
-
 class OpenaiRequest(BaseModel):
     model: str
     messages: List[Dict]
     temperature: float = 0.0
     stream: bool = True
     search_context_url: List[str] = []
+
+@app.post("/analysis")
+async def initial_analysis(request: QuestionRequest):
+    question = request.question.strip()
+    history = history_to_str(request.history)
+
+    if not question:
+        return { "nodeDataArray": [], "linkDataArray": [] }
+    
+    raw_analysis = llm_response(
+        ANALYSIS_NH_TEMPLATE_EN.format(question=question),
+        model=GPT_MODEL_NAME,
+        api_url=GPT_MODEL_API,
+        key=GPT_MODEL_KEY
+    )
+    analysis = extract_analysis_step(raw_analysis)
+    return gen_linear_diagram(analysis)
 
 @app.post("/gen_keywords")
 async def get_keywords(request: QuestionRequest):
