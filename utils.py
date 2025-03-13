@@ -99,7 +99,7 @@ def set_context_empty(relevant_info: List[Dict]) -> List[Dict]:
     """Set the 'context' field to an empty string in the relevant info list."""
     return [{**info, 'context': ''} for info in deepcopy(relevant_info)]
 
-def history_to_str(history, length: int=-1):
+def history_to_str(history: Dict, length: int=-1) -> str:
     """将对话历史转换为字符串"""
     length = length if length > 0 else len(history)
     context = []
