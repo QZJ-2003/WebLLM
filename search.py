@@ -85,24 +85,20 @@ def process_search_queries(
     results = {}
 
     query_cached = []
-    for query in search_queries:
-        if search_db_manager:
+    if search_db_manager:
+        for query in search_queries:
             cached_results = search_db_manager.get(query, num_results=num_results_per_query)
-            if cached_results:
-                results[query] = cached_results
-                query_cached.append(query)
+            if not cached_results: continue
+            results[query] = cached_results
+            query_cached.append(query)
     query_filtered = [q for q in search_queries if q not in query_cached]
-    # print(f"Query cached: {query_cached}")
-    # print(f"Query filtered: {query_filtered}")
 
-    if len(query_filtered) == 0:
-        return results
+    # If all queries have cached results, return directly
+    if len(query_filtered) == 0: return results
 
     results_filtered = {}
-    with ThreadPoolExecutor(
-        max_workers=min(max_workers, len(query_filtered))
-    ) as executor:
-        # 提交任务到线程池
+    with ThreadPoolExecutor(max_workers=min(max_workers, len(query_filtered))) as executor:
+        # Submit tasks to the executor
         future_to_query = {
             executor.submit(
                 # tavily_web_search, query, api_key, endpoint, num_results_per_query
@@ -111,7 +107,7 @@ def process_search_queries(
             for query in query_filtered
         }
 
-        # 等待所有任务完成并收集结果
+        # Process the results as they are completed
         for future in as_completed(future_to_query):
             query = future_to_query[future]
             try:
@@ -119,7 +115,7 @@ def process_search_queries(
             except Exception as e:
                 print(f"Error processing query '{query}': {e}")
     
-    # 更新缓存
+    # Save the results to the database
     if search_db_manager:
         search_db_manager.batch_upsert([
             {
