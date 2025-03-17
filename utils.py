@@ -54,7 +54,7 @@ def extract_relevant_info(search_results: Dict) -> List[Dict]:
     
     return useful_info
 
-def deduplicate_relevant_info_list(relevant_info_list: List[List[Dict]]):
+def deduplicate_relevant_info_list(relevant_info_list: List[List[Dict]]) -> List[Dict]:
     """
     Deduplicate a list of relevant information dictionaries based on the URL field.
 
@@ -77,7 +77,7 @@ def deduplicate_relevant_info_list(relevant_info_list: List[List[Dict]]):
                 deduplicated_dict[url]['keywords'] = list(set(deduplicated_dict[url]['keywords']))
     return rerank_info_id(list(deduplicated_dict.values()))
 
-def rerank_info_id(relevant_info):
+def rerank_info_id(relevant_info: List[Dict]) -> List[Dict]:
     """
     Re-rank the ID field in the relevant information list.
 
@@ -112,7 +112,7 @@ def history_to_str(history: Dict, length: int=-1) -> str:
         context.append(f"{turn['role']}: {turn['content']}")
     return "\n".join(context)
 
-def extract_keywords(model_output):
+def extract_keywords(model_output: str) -> List[str]:
     """
     从模型输出中提取关键词，并将关键词中的标点符号替换为空格
     :param model_output: 模型生成的字符串，格式为"keyword1 | keyword2 | keyword3"
