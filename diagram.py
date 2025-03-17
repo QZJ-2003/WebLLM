@@ -7,6 +7,7 @@ def gen_linear_diagram(linear_data: List[str]) -> Dict:
         nodeDataArray.append({
             "key": i+1,
             "text": step,
+            "category": "Question",
         })
     nodeDataArray.append({"key": len(linear_data)+1, "text": "End", "category":"End"})
 
