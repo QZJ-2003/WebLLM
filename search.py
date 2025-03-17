@@ -84,14 +84,12 @@ def process_search_queries(
     """
     results = {}
 
-    query_cached = []
     if search_db_manager:
         for query in search_queries:
             cached_results = search_db_manager.get(query, num_results=num_results_per_query)
             if not cached_results: continue
             results[query] = cached_results
-            query_cached.append(query)
-    query_filtered = [q for q in search_queries if q not in query_cached]
+    query_filtered = [q for q in search_queries if q not in results]
 
     # If all queries have cached results, return directly
     if len(query_filtered) == 0: return results
