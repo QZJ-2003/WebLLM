@@ -104,6 +104,8 @@ def history_to_str(history: Dict, length: int=-1) -> str:
     length = length if length > 0 else len(history)
     context = []
     for turn in history:
+        if 'role' not in turn or 'content' not in turn:
+            continue
         # 只保留用户和助手的最新3轮对话
         if len(context) >= length:  # 3轮对话，每轮2条
             break
