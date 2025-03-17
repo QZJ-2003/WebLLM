@@ -1,9 +1,10 @@
 import json
 from typing import List, Dict, Generator
 import openai
+from openai import NOT_GIVEN
 
 
-def llm_response(query: str, hisotry: List[Dict]=[], model: str='', key: str='', api_url: str='') -> str:
+def llm_response(query: str, hisotry: List[Dict]=[], model: str='', key: str='', api_url: str='', stop: List[str]=NOT_GIVEN) -> str:
     client = openai.Client(
         api_key=key,
         base_url=api_url,
@@ -13,6 +14,7 @@ def llm_response(query: str, hisotry: List[Dict]=[], model: str='', key: str='',
         model=model,
         messages=messages,
         temperature=0.0,
+        stop=stop,
         stream=False,
     )
     return response.choices[0].message.content
