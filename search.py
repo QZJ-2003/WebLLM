@@ -94,7 +94,6 @@ def process_search_queries(
     # If all queries have cached results, return directly
     if len(query_filtered) == 0: return results
 
-    results_filtered = {}
     with ThreadPoolExecutor(max_workers=min(max_workers, len(query_filtered))) as executor:
         # Submit tasks to the executor
         future_to_query = {
@@ -109,7 +108,7 @@ def process_search_queries(
         for future in as_completed(future_to_query):
             query = future_to_query[future]
             try:
-                results_filtered[query] = future.result()
+                results[query] = future.result()
             except Exception as e:
                 print(f"Error processing query '{query}': {e}")
     
@@ -119,10 +118,9 @@ def process_search_queries(
             {
                 "original_query": query, 
                 "num_results": num_results_per_query, 
-                "results": result
-            } for query, result in results_filtered.items()
+                "results": results[query]
+            } for query in query_filtered
         ])
 
-    results.update(results_filtered)
 
     return results
