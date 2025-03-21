@@ -80,8 +80,8 @@ def llm_response_stream(
                 "finish_reason": choice.finish_reason
             } for choice in chunk.choices]
         }
-        # if not formatted_chunk['choices'][0]['delta']['content']:
-        #     continue
+        if not formatted_chunk['choices'] or not formatted_chunk['choices'][0]['delta']['content']:
+            continue
         
         # 转换为SSE格式
         yield f"data: {json.dumps(formatted_chunk)}\n\n"  # ✅ 关键修改
