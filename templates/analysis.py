@@ -21,4 +21,4 @@ The given question is: {question}
 Your answer is:
 """
 
-
+ANALYSIS_NH_TEMPLATE_ZH = ANALYSIS_NH_TEMPLATE_EN + '(Please answer in Chinese)\n'
