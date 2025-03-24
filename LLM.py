@@ -19,28 +19,6 @@ def llm_response(query: str, hisotry: List[Dict]=[], model: str='', key: str='',
     )
     return response.choices[0].message.content
 
-def llm_response_stream_v2(
-    messages: List[Dict] = [],
-    model: str = '',
-    key: str = '',
-    api_url: str = ''
-) -> Generator[str, None, None]:
-    client = openai.Client(
-        api_key=key,
-        base_url=api_url,
-    )
-    
-    # 注意：stream=True 已启用流式模式
-    stream = client.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=0.0,
-        stream=True,
-    )
-    
-    for chunk in stream:
-        if chunk.choices and chunk.choices[0].delta.content:
-            yield chunk.choices[0].delta.content
 
 def llm_response_stream(
     messages: List[Dict] = [],
@@ -62,29 +40,30 @@ def llm_response_stream(
     )
     
     for chunk in stream:
+        if not chunk.choices or not chunk.choices[0].delta: continue
+        delta = chunk.choices[0].delta
+        content = delta.content
+        reasoning_content = delta.reasoning_content if hasattr(delta, 'reasoning_content') else ''
+        if not content and not reasoning_content: continue
+        if bool(content) and bool(reasoning_content):
+            print(f"[Error] content: {content}\nreasoning_content: {reasoning_content}")
+            continue
         # 构造符合OpenAI规范的完整响应块
         formatted_chunk = {
             "id": chunk.id,  # 必须包含id
             "object": "chat.completion.chunk",
             "created": chunk.created,
             "model": chunk.model,
-            "choices": [{
-                "index": choice.index,
+            "choices": [{  # TODO Only One Choice is returned
+                "index": 0,
                 "delta": {
-                    "content": choice.delta.content,
-                    "reasoning_content": choice.delta.reasoning_content 
-                                         if hasattr(choice.delta, 'reasoning_content') else 
-                                         '',
-                    "role": choice.delta.role  # 保留其他delta字段
+                    "content": content,
+                    "reasoning_content": reasoning_content,
+                    "role": delta.role,
                 },
-                "finish_reason": choice.finish_reason
-            } for choice in chunk.choices]
-        }
-        if not formatted_chunk['choices'] or not formatted_chunk['choices'][0]['delta']['content']:
-            continue
-        
-        # 转换为SSE格式
-        yield f"data: {json.dumps(formatted_chunk)}\n\n"  # ✅ 关键修改
-    
-    # 添加流结束标记
-    yield "data: [DONE]\n\n"
+                "finish_reason": chunk.choices[0].finish_reason
+            }]
+        }        
+        yield f"data: {json.dumps(formatted_chunk)}\n\n"  # 转换为SSE格式
+        print(content if not reasoning_content else reasoning_content, end='')
+    yield "data: [DONE]\n\n"  # 添加流结束标记
