@@ -1,6 +1,6 @@
-Truncate_SEQS = [
-    'Wait,',
-    'Alternatively,'
+TRUNCATE_SEQS = [
+    'Wait', 'wait'
+    'Alternatively', 'alternatively',
 ]
 
 FEEDBACK_MIND_CONTENT = {

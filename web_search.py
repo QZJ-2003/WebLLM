@@ -12,7 +12,7 @@ from crawler_database_manager import CrawlerDatabaseManager
 from search_database_manager import SearchDatabaseManager
 from search import process_search_queries
 from fetch import fetch_page_content, extract_snippet_with_context
-from LLM import llm_response_stream, llm_response
+from LLM import llm_response_stream, llm_response, llm_response_iter_stream
 from utils import extract_relevant_info, \
                   deduplicate_relevant_info_list, \
                   rerank_info_id, \
@@ -22,6 +22,7 @@ from utils import extract_relevant_info, \
                   detect_language_ratio, \
                   extract_analysis_step
 from diagram import gen_linear_diagram
+from templates.interactive_think import FEEDBACK_MIND_CONTENT, TRUNCATE_SEQS
 
 app = FastAPI()
 
@@ -47,6 +48,17 @@ class OpenaiRequest(BaseModel):
     temperature: float = 0.0
     stream: bool = True
     search_context_url: List[str] = []
+
+class InteractiveRequest(BaseModel):
+    model: str
+    messages: List[Dict]
+    temperature: float = 0.0
+    stream: bool = True
+
+    answer_start: bool = True
+    latest_answer: str = ""
+    user_approval: bool = True
+    user_approval_content: str = ""
 
 @app.post("/analysis")
 async def initial_analysis(request: QuestionRequest):
@@ -213,134 +225,6 @@ async def chat(request: OpenaiRequest):
 async def get_models():
     return {"models": MODEL_INFOS}
 
-class InteractiveRequest(BaseModel):
-    model: str
-    messages: List[Dict]
-    temperature: float = 0.0
-    stream: bool = True
-
-    answer_start: bool = True
-    latest_answer: str = ""
-    user_approval: bool = True
-    user_approval_content: str = ""
-
-from typing import Generator
-import openai
-
-class CheckBuffer:
-    def __init__(self, truncate_seqs: list[str]):
-        self.buffer = []
-        self.check_seqs = [seq.split(' ') for seq in set(truncate_seqs) if seq]
-        self.max_len = max(len(seq) for seq in self.check_seqs) if self.check_seqs else 0
-        self.match_record = []
-        
-        assert self.max_len > 0, "Truncate sequences must be non-empty."
-        self._init_match_record()
-    
-    def _init_match_record(self):
-        self.match_record[:] = [list() for _ in range(self.max_len)]
-
-    def check(self, item: str):
-        idx = len(self.buffer)
-        # print(item)
-        search_idx = [i for i in range(len(self.check_seqs))] if idx==0 else \
-                     self.match_record[idx-1]  # last token's all match sequence id
-        
-        matched = False
-        for index in search_idx:
-            if self.check_seqs[index][idx] == item.strip(' '):
-                self.match_record[idx].append(index)
-                matched = True
-        if not matched:
-            res = ''.join(self.buffer+[item])
-            self._init_match_record()
-            self.buffer.clear()
-            return res
-        else:
-            for index in self.match_record[idx]:
-                if len(self.check_seqs[index])==len(self.buffer)+1:
-                    print('Hit: ', self.check_seqs[index])
-                    return True
-            else:
-                self.buffer.append(item)
-                return None
-
-def llm_response_iter_stream(
-    messages: List[Dict] = [],
-    model: str = '',
-    key: str = '',
-    api_url: str = '',
-    num_res: int = 1,
-    truncate_seqs: list[str] = [],
-) -> Generator[str, None, None]:
-    
-    assert num_res == 1, "num_res must be 1 in interactive mode."
-
-    client = openai.Client(api_key=key, base_url=api_url)
-
-    stream = client.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=0.0,
-        stream=True,
-        n=num_res,
-    )
-    
-    buffer = CheckBuffer(truncate_seqs)
-
-    for chunk in stream:
-        if not chunk.choices: continue
-        delta = chunk.choices[0].delta
-        content, reasoning_content = delta.content, delta.reasoning_content
-        if not content and not reasoning_content:
-            continue
-        # only one in content and reasoning_content is not empty
-        if bool(content) == bool(reasoning_content):
-            print("content and reasoning_content must be exclusive.")
-            continue
-        # truncate reasoning_content
-        if content:
-            formatted_chunk = {
-                "id": chunk.id,  # 必须包含id
-                "object": "chat.completion.chunk",
-                "created": chunk.created,
-                "model": chunk.model,
-                "choices": [{
-                    "index": 0,
-                    "delta": {
-                        "stop": '1', # TODO
-                        "content": content,
-                        "reasoning_content": '',
-                        "role": delta.role  # 保留其他delta字段
-                    },
-                    "finish_reason": chunk.choices[0].finish_reason
-                }]
-            }
-        else:
-            res = buffer.check(reasoning_content)
-            if res == None: continue
-            elif res == True: break
-            else:
-                formatted_chunk = {
-                    "id": chunk.id,  # 必须包含id
-                    "object": "chat.completion.chunk",
-                    "created": chunk.created,
-                    "model": chunk.model,
-                    "choices": [{
-                        "index": 0,
-                        "delta": {
-                            "stop": '0', # TODO
-                            "content": '',
-                            "reasoning_content": res,
-                            "role": delta.role  # 保留其他delta字段
-                        },
-                        "finish_reason": chunk.choices[0].finish_reason
-                    }]
-                }
-        print(reasoning_content)
-        yield f"data: {json.dumps(formatted_chunk)}\n\n"
-    yield "data: [DONE]\n\n"
-
 @app.post("/v2/chat/completions", response_class=StreamingResponse)
 async def iter_chat(request: InteractiveRequest):
     messages: List[Dict] = request.messages
@@ -360,8 +244,7 @@ async def iter_chat(request: InteractiveRequest):
             model=request.model,
             key=GPT_MODEL_KEY,
             api_url=GPT_MODEL_API,
-            # truncate_seqs=['Wait']
-            truncate_seqs=['\n\n']
+            truncate_seqs=TRUNCATE_SEQS,
         )
         return StreamingResponse(
             content=response,
