@@ -78,7 +78,7 @@ class CheckBuffer:
         self.max_len = max(len(seq) for seq in self.check_seqs) if self.check_seqs else 0
         self.match_record = []
         print(len(self.check_seqs[0]))
-        print([f'"{t}"' for t in self.check_seqs[0]])
+        print([[f'"{t}"' for t in seqs] for seqs in self.check_seqs])
         
         assert self.max_len > 0, "Truncate sequences must be non-empty."
         self._init_match_record()
