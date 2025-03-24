@@ -1,5 +1,5 @@
 TRUNCATE_SEQS = [
-    'Wait', 'wait'
+    'Wait', 'wait',
     'Alternatively', 'alternatively',
 ]
 
